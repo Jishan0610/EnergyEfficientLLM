@@ -1,22 +1,77 @@
-1. Project Title: Optimizing DistilBERT inference for Energy Efficiency
-2. Team Members:
-a. Rakene Chowdhury (rc3574)
-b. Jishan Desai (jd3895)
-3. Description:
-The exponential growth of artificial intelligence (AI) technologies has led to an increasing reliance on transformer-based models like DistilBERT, resulting in significant computational and energy demands. This study investigates energy efficiency during inference, a critical yet underexplored phase of AI model deployment. Through the application of three optimization techniques—Post-Training Quantization (PTQ), Mixed Precision Inference, and Flash Attention—the research demonstrates the potential to reduce energy consumption while maintaining competitive performance metrics. Using the General Language Understanding Evaluation (GLUE) benchmark datasets, the study evaluates the trade-offs between energy efficiency and task-specific accuracy. Key findings reveal that Mixed Precision Inference and Flash Attention achieve substantial energy reductions without degrading performance, while PTQ can have adverse effects on energy consumption. Profiling tool, ZeusML, was employed to quantify energy usage and emissions, providing actionable insights into sustainable AI practices. These results emphasize the importance of model-level optimizations in complementing infrastructure-based strategies for achieving scalable, energy-efficient AI systems.
-4. Code Repository:
-All of our code to run the experiments is in Energy_EfficientBERT_Inference.ipynb.  You only need to run this notebook to reproduce our results. All the other files are graphs for this README.
-5. How to Run:
-Run each cell in Energy_EfficientBERT_Inference.ipynb from top to bottom sequentially. This will run all experiments and produce graphs from our paper.
-6. Results:
-![img](./Baseline.png)
-![img](./Energy.png)
-![img](./GLUE.png)
-![img](./Throughput.png)
-The results from applying various optimization techniques reveal distinct patterns in energy consumption and task per- formance, driven by differences in implementation efficiency and their impact on specific layers. Key observations and explanations are summarized as follows:
-Quantization: Consistent Energy Increases. Despite its theoretical advantages in reducing computation and memory usage, quantization consistently resulted in higher energy consumption across tasks. This behavior is likely due to inefficiencies in the library’s implementation, which intro- duces significant computational overhead for quantizing and dequantizing weights during execution. To rule out framework- specific inefficiencies, alternative libraries were tested, but the results remained consistent. This suggests that the additional energy required for quantization is inherent to the process, particularly for tasks with high attention demands, such as MNLI and CoLA.
-Flash Attention: Superior Performance through Opti- mized Implementation. Flash Attention achieved significant energy reductions due to its highly efficient implementation, which leverages tiling strategies and optimized kernel execu- tion. By focusing on memory and computation efficiency inattention mechanisms, Flash Attention provided consistent im- provements, especially for pairwise-sentence tasks like MRPC and MNLI. Furthermore, the Hugging Face implementation of Flash Attention required processing in float16 or bfloat16 formats. This not only optimized attention mechanisms but also indirectly reduced energy consumption in feed-forward networks (FFNs), leading to substantial total energy reductions across tasks.
-Mixed Precision (Autocast): Limited Benefits. Mixed Precision (autocast) showed limited energy savings compared to Float16. This is likely due to the frequent fallback to float32 precision for several operations, which diminishes its overall efficiency. Tasks like CoLA and MNLI, which demand higher computational precision, were particularly affected, as maintaining float32 precision negated the potential energy reductions of mixed precision. Infact it did worse on even sst-2.
-Mixed Precision (Float16) + Flash Attention: Combined Benefits. The combination of Mixed Precision (Float16) and Flash Attention resulted in additive improvements, merging the energy-saving advantages of Flash Attention with the reduced computational requirements of float16. This synergy effectively optimized both attention layers and FFNs, leading to consistent energy reductions across all tasks, including computationally intensive pairwise tasks such as MNLI. This approach demonstrated its robustness in achieving energy efficiency while maintaining task performance.
-These observations underscore the importance of implemen- tation efficiency in optimization techniques. Flash Attention and Mixed Precision (Float16) emerged as the most effective approaches due to their robust implementations and impact on both attention and FFN layers. Conversely, quantization’s in- efficiencies highlight the need for more targeted improvements in library implementations to unlock its potential benefits.
+# Optimizing DistilBERT Inference for Energy Efficiency
 
+## Team Members
+- Rakene Chowdhury (rc3574)
+- Jishan Desai (jd3895)
+
+## Project Description
+The rapid proliferation of artificial intelligence (AI) technologies has led to an escalating demand for computational resources, particularly for transformer-based models such as DistilBERT. While much research has focused on training optimizations, the energy efficiency of inference—the phase most relevant for deployment at scale—remains underexplored.
+
+This project investigates inference-time energy optimization of DistilBERT by applying three key techniques:
+- **Post-Training Quantization (PTQ)**
+- **Mixed Precision Inference**
+- **Flash Attention**
+
+Using the General Language Understanding Evaluation (GLUE) benchmark datasets, we analyze the trade-offs between energy efficiency and task-specific accuracy. Energy consumption and carbon emissions were rigorously profiled using **ZeusML**.
+
+### Key Contributions
+- Comprehensive benchmarking of DistilBERT inference optimizations on standard GLUE tasks.
+- Quantitative analysis of energy consumption and emissions across techniques.
+- Identification of effective optimization strategies for sustainable AI inference.
+
+## Code Repository
+All code and experiments are contained within `Energy_EfficientBERT_Inference.ipynb`. To reproduce the results:
+
+1. Open the notebook.
+2. Execute all cells sequentially.
+3. Generated graphs and performance metrics will mirror those reported in the paper.
+
+Additional result visualizations are included in the repository.
+
+## How to Run
+Simply run `Energy_EfficientBERT_Inference.ipynb` from top to bottom. All experiments, profiling, and visualizations will be executed automatically.
+
+---
+
+## Results
+
+| Optimization Technique | Energy Impact | Performance Impact | Notes |
+|-------------------------|---------------|--------------------|-------|
+| Post-Training Quantization (PTQ) | **Increased** energy consumption | Slight degradation | Overhead from quantization/dequantization outweighs theoretical gains. |
+| Flash Attention | **Reduced** energy consumption | Maintained accuracy | Efficient memory/computation via kernel optimizations. |
+| Mixed Precision (Autocast) | Minimal gains | Variable impact | Frequent fallback to float32 diminishes benefits. |
+| Mixed Precision (Float16) + Flash Attention | **Significant reduction** | Maintained accuracy | Synergistic benefits across layers. Most effective strategy. |
+
+Figures:
+
+![Baseline](./Baseline.png)  
+*Figure 1: Baseline performance without optimizations.*
+
+![Energy](./Energy.png)  
+*Figure 2: Energy consumption across optimization techniques.*
+
+![GLUE](./GLUE.png)  
+*Figure 3: GLUE benchmark task accuracies.*
+
+![Throughput](./Throughput.png)  
+*Figure 4: Throughput improvements.*
+
+### Key Observations
+
+- **Post-Training Quantization (PTQ):** Contrary to expectations, quantization resulted in *higher* energy consumption. This inefficiency stems from the computational overhead introduced during weight quantization and dequantization. Testing across multiple libraries ruled out framework-specific issues, suggesting intrinsic limitations for attention-heavy tasks (e.g., MNLI, CoLA).
+
+- **Flash Attention:** Achieved *substantial energy reductions* by optimizing memory usage and kernel execution in attention layers. Required inference in float16 or bfloat16 formats, indirectly improving feed-forward network (FFN) efficiency as well.
+
+- **Mixed Precision (Autocast):** Demonstrated *limited energy savings* due to frequent reversion to float32 precision, particularly for tasks requiring higher computational accuracy (e.g., CoLA, MNLI).
+
+- **Mixed Precision (Float16) + Flash Attention:** This combination delivered *the most consistent energy savings* while maintaining high task accuracy. The synergy between optimized attention and reduced precision in FFNs proved highly effective across all evaluated tasks.
+
+---
+
+## Conclusions
+Our study emphasizes that:
+- **Implementation efficiency is critical**: Optimizations such as Flash Attention and Mixed Precision (Float16) outperform others primarily due to superior kernel and memory handling.
+- **Not all optimizations are equal**: While quantization is theoretically attractive, its current implementations introduce prohibitive overheads for inference tasks involving complex attention mechanisms.
+- **Energy-efficient AI requires holistic strategies**: Beyond infrastructure-level improvements, model-level optimizations offer substantial opportunities to reduce energy footprints.
+
+Future work could explore *adaptive precision techniques* and *hardware-specific optimizations* to further enhance the sustainability of AI deployments.
